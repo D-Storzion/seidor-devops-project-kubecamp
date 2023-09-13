@@ -1,7 +1,5 @@
-# Use the official PHP image with FPM
 FROM php:8.2-fpm
 
-# Install necessary system packages and PHP extensions
 RUN apt-get update && apt-get install -y \
     libssl-dev \
     libzip-dev \
@@ -11,13 +9,14 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-enable mongodb \
     && docker-php-ext-install zip
 
-# Set the working directory
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
 WORKDIR /var/www/html
 
 COPY . .
 
-# Expose port 9000 for FPM
+RUN composer install
+
 EXPOSE 9000
 
-# By default, start php-fpm
 CMD ["php-fpm"]

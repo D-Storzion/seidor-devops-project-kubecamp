@@ -3,7 +3,7 @@ services:
   php:
     build: 
       context: .
-      dockerfile: dev.Dockerfile
+      dockerfile: dockerfile
     volumes:
       - ./:/var/www/html
     ports:
