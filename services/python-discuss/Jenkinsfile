@@ -1,0 +1,48 @@
+pipeline{    
+    agent any
+    parameters {
+        string(name: 'DOCKER_IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag')
+        string(name: 'DOCKER_IMAGE_NAME', defaultValue: 'python-discuss', description: 'Docker image name')
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'sonarqube_5.0'
+                    withSonarQubeEnv(installationName: 'aroldev sonarqube') {
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=sergio-project-kubecamp-python-discuss -Dsonar.sources=./services/python-discuss -Dsonar.inclusions=**/*.py"
+                    }
+                }
+            }
+        }
+        
+        
+        stage('Build Docker Image') {
+            steps {
+                dir('services/python-discuss'){
+                    script{
+                        def dockerImageTag = params.DOCKER_IMAGE_TAG
+                        docker = docker.build("sergiolc1/python-discuss:${dockerImageTag}", '-f dockerfile .')
+                    }
+                }           
+            }
+        }
+        
+        stage('Push Docker Image'){
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'sergio.dockerhub'){
+                        docker.push()
+                    }
+                }
+            }
+        }
+        
+    }
+}
