@@ -1,0 +1,48 @@
+pipeline{    
+    agent any
+    parameters {
+        string(name: 'DOCKER_IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag')
+        string(name: 'DOCKER_IMAGE_NAME', defaultValue: 'php-progress', description: 'Docker image name')
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'sonarqube_5.0'
+                    withSonarQubeEnv(installationName: 'aroldev sonarqube') {
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=sergio-project-kubecamp-php-progress -Dsonar.sources=./services/go-auth -Dsonar.exclusions=**/*_test.go -Dsonar.tests=./services/go-auth -Dsonar.test.inclusions=**/*_test.go"
+                    }
+                }
+            }
+        }
+        
+        
+        stage('Build Docker Image') {
+            steps {
+                dir('services/php-progress'){
+                    script{
+                        def dockerImageTag = params.DOCKER_IMAGE_TAG
+                        docker = docker.build("sergiolc1/php-progress:${dockerImageTag}", '-f dockerfile .')
+                    }
+                }           
+            }
+        }
+        
+        stage('Push Docker Image'){
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'sergio.dockerhub'){
+                        docker.push()
+                    }
+                }
+            }
+        }
+        
+    }
+}
